@@ -70,3 +70,13 @@ SELECT
         COUNT(CASE WHEN loanstatus = 'Finished Payment' THEN 1 END)
     ) AS total_calculated_loans
 FROM loan_data;
+
+-- Data Cleaning from here
+#Calculate the median total price to identify values to be used as null for outliers in the TotalPrice column.
+SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY totalprice) AS median_total_price
+FROM loan_data;
+
+#Update the TotalPice column with median values for null values
+UPDATE loan_data
+SET totalprice = 17600
+WHERE totalprice IS NULL;
