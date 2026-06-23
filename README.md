@@ -5,3 +5,5 @@ From the screenshot "datacleaning.jpg" if you check the source code in the Postg
 In the results tab titled 'loan_data', you see the query producing no null values
 The next is to move to achieve the 3NF. When you check the psql terminal in the datacleaning.jpg file, you can see only loanid is not null. 
 --Therefore, we ensure data integrity by adding additional not null values to columns. After that, we will split the table to ensure no transitive dependencies between the loan data and the customer data. 
+
+23/06/2026 - All columns have been set to not null to ensure the completion of 1NF and 2NF. 
