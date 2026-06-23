@@ -217,3 +217,19 @@ WHERE loanid = 4
 AND startdate IS NULL;
 #Rerun line 187 again to check if all null values have been updated.
 -- Data cleaning is now complete, and all null values have been updated.
+
+ALTER TABLE loan_data
+ALTER COLUMN stringid SET NOT NULL,
+ALTER COLUMN product SET NOT NULL,
+ALTER COLUMN customergender SET NOT NULL,
+ALTER COLUMN location SET NOT NULL,
+ALTER COLUMN region SET NOT NULL,
+ALTER COLUMN startdate SET NOT NULL,
+ALTER COLUMN totalprice SET NOT NULL,
+ALTER COLUMN deposit SET NOT NULL,
+ALTER COLUMN dailyrate SET NOT NULL,
+ALTER COLUMN totaldaysyr SET NOT NULL,
+ALTER COLUMN amtpaid36 SET NOT NULL,
+ALTER COLUMN amtpaid60 SET NOT NULL,
+ALTER COLUMN amtpaid360 SET NOT NULL,
+ALTER COLUMN loanstatus SET NOT NULL;
