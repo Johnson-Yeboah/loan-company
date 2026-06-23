@@ -7,3 +7,8 @@ The next is to move to achieve the 3NF. When you check the psql terminal in the 
 --Therefore, we ensure data integrity by adding additional not null values to columns. After that, we will split the table to ensure no transitive dependencies between the loan data and the customer data. 
 
 23/06/2026 - All columns have been set to not null to ensure the completion of 1NF and 2NF. 
+23/06/2026 - Tried to ensure 3NF by separating the location and customer from the loan_data table
+However, since the loanID and StringID which were suposed to be used for the customer table were the same number, it is redundant to make the customer table with StringID as the primary key. This means the same customer ID does not match the loanID. 
+Therefore, only the location was separated with the location as the primary key. 
+
+In conclusion, the data here cannot be used as a standard relational database.

@@ -218,6 +218,9 @@ AND startdate IS NULL;
 #Rerun line 187 again to check if all null values have been updated.
 -- Data cleaning is now complete, and all null values have been updated.
 
+#Achieved data integrity by setting all columns to NOT NULL to prevent future null values 
+#from being inserted into the table. All columns need to be set to NOT NUll because 
+#they are all important for the analysis of the loan data. 
 ALTER TABLE loan_data
 ALTER COLUMN stringid SET NOT NULL,
 ALTER COLUMN product SET NOT NULL,
@@ -233,3 +236,52 @@ ALTER COLUMN amtpaid36 SET NOT NULL,
 ALTER COLUMN amtpaid60 SET NOT NULL,
 ALTER COLUMN amtpaid360 SET NOT NULL,
 ALTER COLUMN loanstatus SET NOT NULL;
+
+
+--3NF From here.
+#Create a new customer table with customer details.
+CREATE TABLE customer (
+    StringID VARCHAR(255) PRIMARY KEY,
+    CustomerGender VARCHAR(100),
+    Location VARCHAR(255),
+    Region VARCHAR(255)
+);
+#Insert distinct customer details from the loan_data table into the customer table to eliminate redundancy and ensure that each customer is represented only once in the customer table.
+INSERT INTO customer (StringID, CustomerGender, Location, Region)
+SELECT DISTINCT StringID, CustomerGender, Location, Region
+FROM loan_data;
+#Customer table contains transitive dependencies because the location and region columns are dependent on the StringID column, which is the primary key of the customer table. Therefore, we will remove the location and region columns from the customer table to achieve 3NF.
+ALTER TABLE customer
+DROP COLUMN location,
+DROP COLUMN region;
+#Check the customer table.
+SELECT * FROM customer;
+#Create a new location table with location details.
+CREATE TABLE location (
+    Region VARCHAR(255) PRIMARY KEY,
+    Location VARCHAR(255)
+);
+ALTER TABLE location
+DROP CONSTRAINT location_pkey;
+ALTER TABLE location
+ADD PRIMARY KEY (Location);
+ALTER TABLE location RENAME TO locations;
+ALTER TABLE locations RENAME COLUMN locations TO location;
+#Insert distinct location details.
+INSERT INTO locations (location, region)
+SELECT DISTINCT location, MAX(region)
+FROM loan_data
+GROUP BY location;
+
+SELECT * FROM locations;
+
+#Because loan_id has the same number as string_id, we will remove the customer datable because it is redundant.
+DROP TABLE customer;
+
+#Now, we enforce a relationship between the loan_data table and the locations table by adding a foreign key constraint on the location column in the loan_data table that references the region column in the locations table. This ensures that each loan record is associated with a valid location and region, and helps to maintain data integrity.
+ALTER TABLE loan_data
+ADD FOREIGN KEY (location) REFERENCES locations(location);
+
+#Now we drop region column from the loan_data table because it is redundant and can be derived from the locations table.
+ALTER TABLE loan_data
+DROP COLUMN region;
