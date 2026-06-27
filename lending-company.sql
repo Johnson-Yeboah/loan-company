@@ -263,7 +263,7 @@ CREATE TABLE location (
 );
 ALTER TABLE location
 DROP CONSTRAINT location_pkey;
-ALTER TABLE location
+ALTER TABLE locations
 ADD PRIMARY KEY (Location);
 ALTER TABLE location RENAME TO locations;
 ALTER TABLE locations RENAME COLUMN locations TO location;
@@ -285,3 +285,86 @@ ADD FOREIGN KEY (location) REFERENCES locations(location);
 #Now we drop region column from the loan_data table because it is redundant and can be derived from the locations table.
 ALTER TABLE loan_data
 DROP COLUMN region;
+
+-- 1. Create a temp table matching CSV structure
+CREATE TEMP TABLE loan_data_staging (
+    LoanID INT,
+    StringID VARCHAR(255),
+    Product VARCHAR(255),
+    CustomerGender VARCHAR(100),
+    Location VARCHAR(255),
+    Region VARCHAR(255),
+    TotalPrice NUMERIC,
+    StartDate DATE,
+    Deposit NUMERIC,
+    DailyRate NUMERIC,
+    TotalDaysYr INT,
+    AmtPaid36 NUMERIC,
+    AmtPaid60 NUMERIC,
+    AmtPaid360 NUMERIC,
+    LoanStatus VARCHAR(255)
+);
+SET datestyle = 'ISO, DMY';
+-- 2. Load the full CSV into the staging table
+COPY loan_data_staging
+FROM 'C:\Program Files\PostgreSQL\loan_data.csv'
+DELIMITER ',' CSV HEADER;
+
+-- 3. Update main table's region column from the staging table
+UPDATE loan_data
+SET region = loan_data_staging.region
+FROM loan_data_staging
+WHERE loan_data.loanid = loan_data_staging.loanid;
+
+--Check for null values in new table
+SELECT region, loanid, location FROM loan_data
+WHERE region IS NULL;
+-- run query to update null values again. Check line 206
+
+#Alter new loan_data table to set region as not null
+ALTER TABLE loan_data
+ALTER COLUMN region SET NOT NULL;
+
+#Drop the helping table
+DROP Table loan_data_staging;
+
+#Process to drop locations table and try to create a customer table with locations instead
+
+-- 1 Drop foreign key constraint from the locations table
+ALTER TABLE loan_data
+DROP CONSTRAINT loan_data_location_fkey;
+
+-- 2 Drop the locations table
+DROP TABLE locations;
+
+#Create a new customer table
+CREATE TABLE customer(
+    stringid VARCHAR(255),
+    customergender VARCHAR(100),
+    location VARCHAR(255),
+    region VARCHAR(255)
+)
+
+#Insert the customer details from the loan_data
+INSERT INTO customer (stringid, customergender, location, region)
+SELECT DISTINCT stringid, customergender, location, region
+FROM loan_data;
+
+#Make the stringid the primary key for the customer table.
+ALTER TABLE customer
+ADD PRIMARY KEY (stringid);
+
+#Make the stringid in the loan_data table the foreing key, referencing that of the customer table. 
+ALTER TABLE loan_data
+ADD FOREIGN KEY (stringid) REFERENCES customer(stringid);
+
+#Check the customer table
+SELECT * FROM customer;
+
+#Drop the transitive dependent columns from the loan_data table
+ALTER TABLE loan_data
+DROP COLUMN customergender,
+DROP COLUMN location,
+DROP COLUMN region;
+
+#Everything now attains the 3NF. 
