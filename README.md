@@ -12,3 +12,9 @@ However, since the loanID and StringID which were suposed to be used for the cus
 Therefore, only the location was separated with the location as the primary key. 
 
 In conclusion, the data here cannot be used as a standard relational database.
+
+27/06/2026 - I realized that the 3NF is not about the rows but the fact that there are no transitive dependencies. Therefore, I droped the created locations table, revised 
+the loan_data to its orginal with the regions and dropped the columns that were existent in the new customer table, except the 'stringid'. These columns are the customergender, the location,
+and the region. 
+
+
