@@ -368,3 +368,70 @@ DROP COLUMN location,
 DROP COLUMN region;
 
 #Everything now attains the 3NF. 
+
+-- Queries
+#customers who have finished payment
+SELECT customer.*, loanstatus
+FROM customer
+LEFT JOIN loan_data USING (stringid)
+WHERE loanstatus = 'Finished Payment' OR loanstatus IS NULL;
+
+#count of customers that have finished payment
+SELECT COUNT(*) FROM customer
+JOIN loan_data ON loan_data.stringid = customer.stringid
+WHERE loanstatus = 'Finished Payment';
+
+#count all loan statuses
+SELECT 
+    COUNT(CASE WHEN loanstatus = 'Finished Payment' THEN 1 END) as finished, 
+    COUNT(CASE WHEN loanstatus = 'Active' THEN 1 END) as active,
+    COUNT(CASE WHEN loanstatus = 'Blocked' THEN 1 END) as blocked,
+    COUNT(CASE WHEN loanstatus = 'Unknown' THEN 1 END) as Unknown,
+    COUNT(*) AS total
+FROM loan_data;
+
+#count all loan statuses Using rows
+SELECT loanstatus, COUNT(loanstatus) AS total FROM loan_data
+GROUP BY loanstatus
+ORDER BY total;
+
+#Count the number of customers in each region with the 'Finished Payment' status
+SELECT region, COUNT(region) AS numfinished FROM customer
+JOIN loan_data USING (stringid)
+WHERE loanstatus = 'Finished Payment'
+GROUP BY region
+ORDER BY numfinished;
+
+#Count the number of customers in each region with the "Active" status
+SELECT region, COUNT(region) AS numactive FROM customer
+JOIN loan_data ON customer.stringid = loan_data.stringid
+WHERE loanstatus = 'Active'
+GROUP BY region
+ORDER BY numactive;
+
+#Count number of blocked-status customers from each region
+SELECT region, COUNT(region) AS numblocked FROM customer
+JOIN loan_data USING (stringid)
+WHERE loanstatus = 'Blocked'
+GROUP BY region
+ORDER BY numblocked;
+
+#Count number of unknown-status customers from each region
+SELECT region, COUNT(region) AS numunknown FROM customer
+JOIN loan_data USING (stringid)
+WHERE loanstatus = 'Unknown'
+GROUP BY region
+ORDER BY numunknown;
+
+#Checking all the regions and their status, using the status's as attributes in a table
+SELECT
+    region,
+    COUNT(CASE WHEN loanstatus = 'Finished Payment' THEN 1 END) AS numfinsihed,
+    COUNT(CASE WHEN loanstatus = 'Active' THEN 1 END) AS numactive,
+    COUNT(CASE WHEN loanstatus = 'Blocked' THEN 1 END) AS numblocked,
+    COUNT(CASE WHEN loanstatus = 'Unknown' THEN 1 END) AS numunknown,
+    COUNT(region) AS total
+FROM customer
+JOIN loan_data USING (stringid)
+GROUP BY region
+ORDER BY SUBSTRING(region FROM 8)::INT;

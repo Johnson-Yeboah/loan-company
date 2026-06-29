@@ -17,4 +17,6 @@ In conclusion, the data here cannot be used as a standard relational database.
 the loan_data to its orginal with the regions and dropped the columns that were existent in the new customer table, except the 'stringid'. These columns are the customergender, the location,
 and the region. 
 
-
+29/06/2026 - Querries to show all the loanstatuses. This revealed that the higher the total number of customers a region has, the higher they rank in all the loanstatuses. However, there may 
+be other easons why these regions with high number of customers may be performing badly (with high number of blocked customers and unfinished payments) or very good (high number of customers with
+finished status) Therefore, descriptive analysis alone cannot be used to measure performances. 
