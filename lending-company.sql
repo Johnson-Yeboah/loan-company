@@ -1,4 +1,4 @@
-#Create a database and a table for the lending company.
+-- Create a database and a table for the lending company.
 CREATE DATABASE lending_company
 
 #Create a table named 'lending_company' with the specified columns and data types.
@@ -18,7 +18,7 @@ CREATE TABLE lending_company(LoanID INT PRIMARY KEY,
                          AmtPaid360 NUMERIC,
                          LoanStatus VARCHAR(255));
 
-#Drop the table because it conflicts with the database name (lending_company), and we will create a new table named 'loan_data' instead.
+-- Drop the table because it conflicts with the database name (lending_company), and we will create a new table named 'loan_data' instead.
 DROP TABLE IF EXISTS lending_company;
 
 CREATE TABLE loan_data (
@@ -39,22 +39,22 @@ CREATE TABLE loan_data (
     LoanStatus VARCHAR(255)
 );
 
-#Check the structure of the table.
+-- Check the structure of the table.
 SELECT * FROM loan_data;
 
-#Alter the data type of the StringID column to VARCHAR(255).
+--Alter the data type of the StringID column to VARCHAR(255).
 ALTER TABLE loan_data ALTER COLUMN StringID TYPE VARCHAR(255);
 
-#Set the date style to ISO, DMY (Day-Month-Year) for proper date formatting.
+-- Set the date style to ISO, DMY (Day-Month-Year) for proper date formatting.
 SET datestyle = 'ISO, DMY';
 
-#Insert data into the table from a CSV file.
+-- Insert data into the table from a CSV file.
 COPY loan_data (loanid, stringid, product, customergender, location, region, totalprice, startdate, deposit, dailyrate, totaldaysyr, amtpaid36, amtpaid60, amtpaid360, loanstatus)
 FROM 'C:\Program Files\PostgreSQL\loan_data.csv' 
 DELIMITER ',' 
 CSV HEADER;
 
-#Query the different loan statuses and count the number of customers in each category.
+-- Query the different loan statuses and count the number of customers in each category.
 SELECT 
     COUNT(CASE WHEN loanstatus = 'Active' THEN 1 END) AS active_loans,
     COUNT(CASE WHEN loanstatus IS NULL THEN 1 END) AS no_data,
@@ -72,27 +72,27 @@ SELECT
 FROM loan_data;
 
 -- Data Cleaning from here
-#Calculate the median total price to identify values to be used as null for outliers in the TotalPrice column.
+-- Calculate the median total price to identify values to be used as null for outliers in the TotalPrice column.
 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY totalprice) AS median_total_price
 FROM loan_data;
 
-#Update the TotalPice column with median values for null values
+-- Update the TotalPrice column with median values for null values
 UPDATE loan_data
 SET totalprice = 17600
 WHERE totalprice IS NULL;
 
-#Checking the product column for any null values and updating them to 'Unknown' if found.
+-- Checking the product column for any null values and updating them to 'Unknown' if found.
 UPDATE loan_data
 SET product = 'Unknown'
 WHERE product IS NULL;
 
-#Checking why some payments are negative.
+-- Checking why some payments are negative.
 SELECT loanid, totalprice, amtpaid36, amtpaid60, amtpaid360, loanstatus
 FROM loan_data
 WHERE amtpaid36 < 0 OR amtpaid60 < 0 OR amtpaid360 < 0;
-#The negative values in the payment columns are rightly negative because they may be  representative of refunds or overpayments. Therefore, we will not update these values to positive as they are valid data points in the context of loan payments.
+-- The negative values in the payment columns are rightly negative because they may be  representative of refunds or overpayments. Therefore, we will not update these values to positive as they are valid data points in the context of loan payments.
 
-#Checking why there are null values in the loan status column.
+-- Checking why there are null values in the loan status column.
 SELECT loanid, 
     startdate, 
     totalprice, 
@@ -104,7 +104,7 @@ FROM loan_data
 WHERE loanstatus IS NULL;
 
 
-#Checking the percentage of payment for the loanstatus to be deemed "Blocked"
+-- Checking the percentage of payment for the loanstatus to be deemed "Blocked"
 SELECT loanid,
     startdate,
     deposit,
@@ -114,9 +114,9 @@ SELECT loanid,
     loanstatus  
 FROM loan_data
 WHERE loanstatus = 'Blocked';
-#"Blocked" account is one where the customer has paid back between 3% and 66% by Day 360
+-- "Blocked" account is one where the customer has paid back between 3% and 66% by Day 360
 
-#Checking the percentage of payment for the loanstatus to be deemed 'Active'.
+-- Checking the percentage of payment for the loanstatus to be deemed 'Active'.
 SELECT loanid, 
     totalprice, 
     amtpaid360, 
@@ -124,9 +124,9 @@ SELECT loanid,
     loanstatus  
 FROM loan_data
 WHERE loanstatus = 'Active';
-#"Active" account varies widely in terms of payment percentage, with some customers having paid back a significant portion of their loan while others have paid very little. This suggests that the "Active" status may encompass a wide range of customer behaviors and payment patterns, making it a more heterogeneous group compared to "Blocked" accounts.
+-- "Active" account varies widely in terms of payment percentage, with some customers having paid back a significant portion of their loan while others have paid very little. This suggests that the "Active" status may encompass a wide range of customer behaviors and payment patterns, making it a more heterogeneous group compared to "Blocked" accounts.
 
-#Checking the percentage of payment for the loanstatus to be declared 'Active' or 'Blocked' based on the 36, 60, and 360 day payments.
+-- Checking the percentage of payment for the loanstatus to be declared 'Active' or 'Blocked' based on the 36, 60, and 360 day payments.
 SELECT loanid, 
     startdate,
     deposit,
@@ -140,26 +140,26 @@ SELECT loanid,
     loanstatus
 FROM loan_data
 WHERE loanstatus IN ('Active', 'Blocked');
-#Loan status depends dynamically on time elapsed since the start date and a single flat percentage may not be used for classification.
+-- Loan status depends dynamically on time elapsed since the start date and a single flat percentage may not be used for classification.
 
-#Checking max start date.
+-- Checking max start date.
 SELECT MAX(startdate) AS max_start_date
 FROM loan_data;
-#Max start date is 2020-07-31.
+-- Max start date is 2020-07-31.
 
 --Because of the dynamic nature of the loan statuses, we will not update the null values in the loan status column with 
 --a flat percentage. Instead payments with 95% or more will be classified as "Finished Payments", 
 --all other payments will be classified as "Active" if less than a year old, and "Unknown" if the legacy records can't be 
 --verified taking the max date of data retrieval as 12-31-2020 since max_start_date is 2020-07-31.
 
-#Update the loan status with null value records to 'Finished Payment' if the payment percentage is 95% or more.
+-- Update the loan status with null value records to 'Finished Payment' if the payment percentage is 95% or more.
 UPDATE loan_data
 SET loanstatus = 'Finished Payment'
 WHERE loanstatus is NULL
 AND TotalPrice IS NOT NULL
 AND (amtpaid360 / totalprice) >= 0.95;
 
-#Update the loan status with null value records to 'Active' if the payment percentage is less than 95% and the start date is within one year of the max start date.
+-- Update the loan status with null value records to 'Active' if the payment percentage is less than 95% and the start date is within one year of the max start date.
 UPDATE loan_data
 SET loanstatus = 'Active'
 WHERE loanstatus is NULL
@@ -168,7 +168,7 @@ AND (amtpaid360 / totalprice) < 0.95
 AND startdate >= (SELECT MAX(startdate) - INTERVAL '1 year' 
 FROM loan_data);
 
-#Update the loan status with null value records to 'Unknown' if the payment percentage is less than 95% and the start date is more than one year old.
+-- Update the loan status with null value records to 'Unknown' if the payment percentage is less than 95% and the start date is more than one year old.
 UPDATE loan_data
 SET loanstatus = 'Unknown'
 WHERE loanstatus is NULL
@@ -183,44 +183,44 @@ FROM loan_data);
 --than 95% and a start date more than one year old.
 --Run line 96 to check the updated loan statuses.
 
-#Check if null values still exist in any column after the updates.
+-- Check if null values still exist in any column after the updates.
 SELECT * FROM loan_data
 WHERE NOT (loan_data IS NOT NULL);
-#loanid 4 has a null value in startdate column. Loanid7 has a null value in region with Location 25.
+-- loanid 4 has a null value in startdate column. Loanid7 has a null value in region with Location 25.
 
-#Checking number of regions
+-- Checking number of regions
 SELECT DISTINCT region
 FROM loan_data
 WHERE region LIKE 'Region%'
 ORDER BY region ASC;
-#Last region number is 18.
+-- Last region number is 18.
 
-#Calculate the median region for Location 25 to identify the central tendency of the regions for that location.
+-- Calculate the median region for Location 25 to identify the central tendency of the regions for that location.
 SELECT 
     'Region ' || percentile_cont(0.5) WITHIN GROUP (ORDER BY SUBSTRING(region FROM 8)::int) AS median_region
 FROM loan_data
 WHERE location = 'Location 25'
   AND region LIKE 'Region%';
-#The median region for Location 25 is Region 4. This means that the central tendency of the regions for Location 25 is around Region 4, which can be used to impute the null value in the region column for Location 25.
+-- The median region for Location 25 is Region 4. This means that the central tendency of the regions for Location 25 is around Region 4, which can be used to impute the null value in the region column for Location 25.
 
-#Update the null value in the region column for Location 25 with the median region.
+-- Update the null value in the region column for Location 25 with the median region.
 UPDATE loan_data
 SET region = 'Region 4'
 WHERE location = 'Location 25'
 AND region IS NULL;
 
-#Since the assumed last start date is 2020-07-31, we will update the null value in the startdate column for loanid 4 to a year before the max start date, since the load ins active and the amount paid for  360 days is available, 
-#which is 2019-07-31, to maintain consistency with the data and avoid classifying it as "Active" or "Finished Payment" based on the payment percentage.
+-- Since the assumed last start date is 2020-07-31, we will update the null value in the startdate column for loanid 4 to a year before the max start date, since the load ins active and the amount paid for  360 days is available, 
+-- which is 2019-07-31, to maintain consistency with the data and avoid classifying it as "Active" or "Finished Payment" based on the payment percentage.
 UPDATE loan_data
 SET startdate = '2019-07-31'
 WHERE loanid = 4
 AND startdate IS NULL;
-#Rerun line 187 again to check if all null values have been updated.
+-- Rerun line 187 again to check if all null values have been updated.
 -- Data cleaning is now complete, and all null values have been updated.
 
-#Achieved data integrity by setting all columns to NOT NULL to prevent future null values 
-#from being inserted into the table. All columns need to be set to NOT NUll because 
-#they are all important for the analysis of the loan data. 
+-- Achieved data integrity by setting all columns to NOT NULL to prevent future null values 
+-- from being inserted into the table. All columns need to be set to NOT NUll because 
+-- they are all important for the analysis of the loan data. 
 ALTER TABLE loan_data
 ALTER COLUMN stringid SET NOT NULL,
 ALTER COLUMN product SET NOT NULL,
@@ -239,35 +239,38 @@ ALTER COLUMN loanstatus SET NOT NULL;
 
 
 --3NF From here.
-#Create a new customer table with customer details.
+-- Create a new customer table with customer details.
 CREATE TABLE customer (
     StringID VARCHAR(255) PRIMARY KEY,
     CustomerGender VARCHAR(100),
     Location VARCHAR(255),
     Region VARCHAR(255)
 );
-#Insert distinct customer details from the loan_data table into the customer table to eliminate redundancy and ensure that each customer is represented only once in the customer table.
+-- Insert distinct customer details from the loan_data table into the customer table to eliminate redundancy and ensure that each customer is represented only once in the customer table.
 INSERT INTO customer (StringID, CustomerGender, Location, Region)
 SELECT DISTINCT StringID, CustomerGender, Location, Region
 FROM loan_data;
-#Customer table contains transitive dependencies because the location and region columns are dependent on the StringID column, which is the primary key of the customer table. Therefore, we will remove the location and region columns from the customer table to achieve 3NF.
+-- Customer table contains transitive dependencies because the location and region columns are dependent on the StringID column, which is the primary key of the customer table. Therefore, we will remove the location and region columns from the customer table to achieve 3NF.
 ALTER TABLE customer
 DROP COLUMN location,
 DROP COLUMN region;
-#Check the customer table.
+-- Check the customer table.
 SELECT * FROM customer;
-#Create a new location table with location details.
+-- Create a new location table with location details.
 CREATE TABLE location (
     Region VARCHAR(255) PRIMARY KEY,
     Location VARCHAR(255)
 );
+
+-- Change the names of the constraints and table to avoid confusion
 ALTER TABLE location
 DROP CONSTRAINT location_pkey;
 ALTER TABLE locations
 ADD PRIMARY KEY (Location);
 ALTER TABLE location RENAME TO locations;
 ALTER TABLE locations RENAME COLUMN locations TO location;
-#Insert distinct location details.
+
+--Insert distinct location details.
 INSERT INTO locations (location, region)
 SELECT DISTINCT location, MAX(region)
 FROM loan_data
@@ -275,14 +278,14 @@ GROUP BY location;
 
 SELECT * FROM locations;
 
-#Because loan_id has the same number as string_id, we will remove the customer datable because it is redundant.
+-- Because loan_id has the same number as string_id, we will remove the customer datable because it is redundant.
 DROP TABLE customer;
 
-#Now, we enforce a relationship between the loan_data table and the locations table by adding a foreign key constraint on the location column in the loan_data table that references the region column in the locations table. This ensures that each loan record is associated with a valid location and region, and helps to maintain data integrity.
+-- Now, we enforce a relationship between the loan_data table and the locations table by adding a foreign key constraint on the location column in the loan_data table that references the region column in the locations table. This ensures that each loan record is associated with a valid location and region, and helps to maintain data integrity.
 ALTER TABLE loan_data
 ADD FOREIGN KEY (location) REFERENCES locations(location);
 
-#Now we drop region column from the loan_data table because it is redundant and can be derived from the locations table.
+-- Now we drop region column from the loan_data table because it is redundant and can be derived from the locations table.
 ALTER TABLE loan_data
 DROP COLUMN region;
 
@@ -321,14 +324,14 @@ SELECT region, loanid, location FROM loan_data
 WHERE region IS NULL;
 -- run query to update null values again. Check line 206
 
-#Alter new loan_data table to set region as not null
+--Alter new loan_data table to set region as not null
 ALTER TABLE loan_data
 ALTER COLUMN region SET NOT NULL;
 
-#Drop the helping table
+-- Drop the helping table
 DROP Table loan_data_staging;
 
-#Process to drop locations table and try to create a customer table with locations instead
+--Process to drop locations table and try to create a customer table with locations instead
 
 -- 1 Drop foreign key constraint from the locations table
 ALTER TABLE loan_data
@@ -337,7 +340,7 @@ DROP CONSTRAINT loan_data_location_fkey;
 -- 2 Drop the locations table
 DROP TABLE locations;
 
-#Create a new customer table
+--Create a new customer table
 CREATE TABLE customer(
     stringid VARCHAR(255),
     customergender VARCHAR(100),
@@ -345,43 +348,43 @@ CREATE TABLE customer(
     region VARCHAR(255)
 )
 
-#Insert the customer details from the loan_data
+-- Insert the customer details from the loan_data
 INSERT INTO customer (stringid, customergender, location, region)
 SELECT DISTINCT stringid, customergender, location, region
 FROM loan_data;
 
-#Make the stringid the primary key for the customer table.
+-- Make the stringid the primary key for the customer table.
 ALTER TABLE customer
 ADD PRIMARY KEY (stringid);
 
-#Make the stringid in the loan_data table the foreing key, referencing that of the customer table. 
+-- Make the stringid in the loan_data table the foreign key, referencing that of the customer table.
 ALTER TABLE loan_data
 ADD FOREIGN KEY (stringid) REFERENCES customer(stringid);
 
-#Check the customer table
+-- Check the customer table
 SELECT * FROM customer;
 
-#Drop the transitive dependent columns from the loan_data table
+-- Drop the transitive dependent columns from the loan_data table
 ALTER TABLE loan_data
 DROP COLUMN customergender,
 DROP COLUMN location,
 DROP COLUMN region;
 
-#Everything now attains the 3NF. 
+-- Everything now attains the 3NF. 
 
 -- Queries
-#customers who have finished payment
+-- customers who have finished payment
 SELECT customer.*, loanstatus
 FROM customer
 LEFT JOIN loan_data USING (stringid)
 WHERE loanstatus = 'Finished Payment' OR loanstatus IS NULL;
 
-#count of customers that have finished payment
+-- count of customers that have finished payment
 SELECT COUNT(*) FROM customer
 JOIN loan_data ON loan_data.stringid = customer.stringid
 WHERE loanstatus = 'Finished Payment';
 
-#count all loan statuses
+-- count all loan statuses
 SELECT 
     COUNT(CASE WHEN loanstatus = 'Finished Payment' THEN 1 END) as finished, 
     COUNT(CASE WHEN loanstatus = 'Active' THEN 1 END) as active,
@@ -390,40 +393,40 @@ SELECT
     COUNT(*) AS total
 FROM loan_data;
 
-#count all loan statuses Using rows
+-- count all loan statuses Using rows
 SELECT loanstatus, COUNT(loanstatus) AS total FROM loan_data
 GROUP BY loanstatus
 ORDER BY total;
 
-#Count the number of customers in each region with the 'Finished Payment' status
+-- Count the number of customers in each region with the 'Finished Payment' status
 SELECT region, COUNT(region) AS numfinished FROM customer
 JOIN loan_data USING (stringid)
 WHERE loanstatus = 'Finished Payment'
 GROUP BY region
 ORDER BY numfinished;
 
-#Count the number of customers in each region with the "Active" status
+-- Count the number of customers in each region with the "Active" status
 SELECT region, COUNT(region) AS numactive FROM customer
 JOIN loan_data ON customer.stringid = loan_data.stringid
 WHERE loanstatus = 'Active'
 GROUP BY region
 ORDER BY numactive;
 
-#Count number of blocked-status customers from each region
+-- Count number of blocked-status customers from each region
 SELECT region, COUNT(region) AS numblocked FROM customer
 JOIN loan_data USING (stringid)
 WHERE loanstatus = 'Blocked'
 GROUP BY region
 ORDER BY numblocked;
 
-#Count number of unknown-status customers from each region
+-- Count number of unknown-status customers from each region
 SELECT region, COUNT(region) AS numunknown FROM customer
 JOIN loan_data USING (stringid)
 WHERE loanstatus = 'Unknown'
 GROUP BY region
 ORDER BY numunknown;
 
-#Checking all the regions and their status, using the status's as attributes in a table
+-- Checking all the regions and their status, using the status's as attributes in a table
 SELECT
     region,
     COUNT(CASE WHEN loanstatus = 'Finished Payment' THEN 1 END) AS numfinsihed,
