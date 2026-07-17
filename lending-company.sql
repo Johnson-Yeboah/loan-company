@@ -374,6 +374,7 @@ DROP COLUMN region;
 
 -- Queries
 -- customers who have finished payment
+CREATE VIEW finished_payment_customers AS
 SELECT customer.*, loanstatus
 FROM customer
 LEFT JOIN loan_data USING (stringid)
@@ -385,6 +386,7 @@ JOIN loan_data ON loan_data.stringid = customer.stringid
 WHERE loanstatus = 'Finished Payment';
 
 -- count all loan statuses
+CREATE VIEW loan_status_counts AS
 SELECT 
     COUNT(CASE WHEN loanstatus = 'Finished Payment' THEN 1 END) as finished, 
     COUNT(CASE WHEN loanstatus = 'Active' THEN 1 END) as active,
@@ -394,11 +396,13 @@ SELECT
 FROM loan_data;
 
 -- count all loan statuses Using rows
+CREATE VIEW loan_status_counts_rows AS
 SELECT loanstatus, COUNT(loanstatus) AS total FROM loan_data
 GROUP BY loanstatus
 ORDER BY total;
 
 -- Count the number of customers in each region with the 'Finished Payment' status
+CREATE VIEW finished_payment_by_region AS
 SELECT region, COUNT(region) AS numfinished FROM customer
 JOIN loan_data USING (stringid)
 WHERE loanstatus = 'Finished Payment'
@@ -406,6 +410,7 @@ GROUP BY region
 ORDER BY numfinished;
 
 -- Count the number of customers in each region with the "Active" status
+CREATE VIEW active_by_region AS
 SELECT region, COUNT(region) AS numactive FROM customer
 JOIN loan_data ON customer.stringid = loan_data.stringid
 WHERE loanstatus = 'Active'
@@ -413,6 +418,7 @@ GROUP BY region
 ORDER BY numactive;
 
 -- Count number of blocked-status customers from each region
+CREATE VIEW blocked_by_region AS
 SELECT region, COUNT(region) AS numblocked FROM customer
 JOIN loan_data USING (stringid)
 WHERE loanstatus = 'Blocked'
@@ -420,6 +426,7 @@ GROUP BY region
 ORDER BY numblocked;
 
 -- Count number of unknown-status customers from each region
+CREATE VIEW unknown_by_region AS
 SELECT region, COUNT(region) AS numunknown FROM customer
 JOIN loan_data USING (stringid)
 WHERE loanstatus = 'Unknown'
@@ -427,6 +434,7 @@ GROUP BY region
 ORDER BY numunknown;
 
 -- Checking all the regions and their status, using the status's as attributes in a table
+CREATE VIEW region_status_counts AS
 SELECT
     region,
     COUNT(CASE WHEN loanstatus = 'Finished Payment' THEN 1 END) AS numfinsihed,
