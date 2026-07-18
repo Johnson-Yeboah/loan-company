@@ -446,3 +446,8 @@ FROM customer
 JOIN loan_data USING (stringid)
 GROUP BY region
 ORDER BY SUBSTRING(region FROM 8)::INT;
+
+-- Checking if script works by updating customer table of with loan_id_540 from male to female.
+UPDATE customer
+SET customergender = 'Female'
+WHERE stringid = 'LoanID_540';

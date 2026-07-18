@@ -107,6 +107,5 @@ push_df(spreadsheet, df_finished_payment_by_region, "finished_payment_by_region"
 push_df(spreadsheet, df_region_status_counts, "region_status_counts")
 
 
-
-
-
+# Print statement for finishing
+print("Pipeline finished successfully.")
